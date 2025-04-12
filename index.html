@@ -19,7 +19,7 @@
           <th>Grade</th>
           <th>2nd Grade</th>
           <th>Credits</th>
-          <th>Status</th>
+          <th>Delete</th>
         </tr>
       </thead>
       <tbody id="courseTable">
@@ -31,13 +31,7 @@
           <td><input type="text" class="grade"></td>
           <td><input type="text" class="grade2"></td>
           <td><input type="number" class="credits" readonly></td>
-          <td>
-            <select class="status" onchange="updateRowColor(this)">
-              <option value="pass" selected>Pass</option>
-              <option value="skip">Skip</option>
-              <option value="redo">Redo</option>
-            </select>
-          </td>
+          <td><button onclick="deleteRow(this)" style="color: red; border: none; background: none; cursor: pointer;">Delete</button></td>
         </tr>
       </tbody>
     </table>
@@ -104,6 +98,18 @@ const courseData = {
   '21102': ['APM', 'Principles of Human Resource Management and Leadership'],
   '21112': ['APM', 'Marketing Management'],
 
+  // Level 2 - Semester 2
+  '22012': ['CHE', 'Concepts in Inorganic Chemistry II'],
+  '22022': ['CHE', 'Heterocyclic Chemistry and Spectroscopy'],
+  '22032': ['CHE', 'Principles of Physical Chemistry III'],
+  '22041': ['CHE', 'Physical Chemistry Laboratory'],
+  '22051': ['CHE', 'Separation Methods and Fundamentals of Chromatography'],
+  '22061': ['CHE', 'Natural Products'],
+  '22071': ['ENH', 'English for Scientific Writing'],
+  '22082': ['APM', 'Computer Based Tools for Management'],
+  '22092': ['APM', 'Total Quality Management'],
+  '22102': ['APM', 'Operations Management'],
+
   // Level 3 - Semester 1
   '31013': ['CHE', 'Advanced Inorganic Chemistry I'],
   '31022': ['CHE', 'Physical Organic Chemistry, Pericyclic Reactions and Natural Products Chemistry'],
@@ -138,7 +144,20 @@ const courseData = {
   '42022': ['CHE', 'Selected Topics in Physical Chemistry II'],
   '42032': ['ENH', 'Comprehensive Chemistry (Theory)'],
   '42042': ['ENH', 'Comprehensive Chemistry (Practical)'],
-  '42052': ['APM', 'Professional Practices']
+  '42052': ['APM', 'Professional Practices'],
+
+  // Level 3 & 4 - Elective Courses
+  '44063': ['CHE', 'Analytical Industrial Biochemistry'],
+  '44073': ['CHE', 'Electrochemical Technology'],
+  '42081': ['CHE', 'Mineral Resources in Sri Lanka - Chemistry and Applications'],
+  '41093': ['CHE', 'Food Chemistry and Technology'],
+  '44102': ['CHE', 'Agrochemicals'],
+  '44113': ['CHE', 'Chemical Education'],
+  '44122': ['CHE', 'Industrial Chemistry and Technology'],
+  '42132': ['CHE', 'Quality Management'],
+  '42142': ['CHE', 'Further Topics in Environmental and Green Chemistry'],
+  '44152': ['CHE', 'Pharmaceutical Technology'],
+  '44163': ['CHE', 'Pharmaceutical and Medicinal Chemistry'],
 
 };
 
@@ -146,7 +165,6 @@ function renderSortedTable() {
   const tableBody = document.getElementById('courseTable');
   const rows = [];
 
-  // Collect all current data into a list
   const trList = tableBody.querySelectorAll('tr');
   trList.forEach(tr => {
     const code = tr.querySelector('.code').value.trim();
@@ -154,14 +172,12 @@ function renderSortedTable() {
     const name = tr.querySelector('.name').value;
     const levelsem = tr.querySelector('.levelsem').value;
     const grade = tr.querySelector('.grade').value;
-    const grade2 = tr.querySelector('.grade2') ? tr.querySelector('.grade2').value : '';  // ✅ added grade2
+    const grade2 = tr.querySelector('.grade2') ? tr.querySelector('.grade2').value : '';
     const credits = tr.querySelector('.credits').value;
-    const status = tr.querySelector('.status')?.value || 'pass';
 
-    rows.push({ code, category, name, levelsem, grade, grade2, credits, status });
+    rows.push({ code, category, name, levelsem, grade, grade2, credits });
   });
 
-  // Sort by Course Code
   rows.sort((a, b) => parseInt(a.code) - parseInt(b.code));
 
   tableBody.innerHTML = '';
@@ -174,22 +190,10 @@ function renderSortedTable() {
       <td><input type="text" class="name" value="${row.name}" readonly></td>
       <td><input type="text" class="levelsem" value="${row.levelsem}" readonly></td>
       <td><input type="text" class="grade" value="${row.grade}"></td>
-      <td><input type="text" class="grade2" value="${row.grade2}"></td>  <!-- ✅ added grade2 here -->
+      <td><input type="text" class="grade2" value="${row.grade2}"></td>
       <td><input type="number" class="credits" value="${row.credits}" readonly></td>
-      <td>
-        <select class="status" onchange="updateRowColor(this)">
-          <option value="pass" ${row.status === 'pass' ? 'selected' : ''}>Pass</option>
-          <option value="skip" ${row.status === 'skip' ? 'selected' : ''}>Skip</option>
-          <option value="redo" ${row.status === 'redo' ? 'selected' : ''}>Redo</option>
-        </select>
-      </td>
+      <td><button onclick="deleteRow(this)" style="color: red; border: none; background: none; cursor: pointer;">Delete</button></td>
     `;
-
-    if (row.status === 'skip') {
-      tr.style.backgroundColor = '#ffcccc';
-    } else if (row.status === 'redo') {
-      tr.style.backgroundColor = '#ccffcc';
-    }
 
     tableBody.appendChild(tr);
   });
@@ -244,13 +248,7 @@ function addRow() {
     <td><input type="text" class="levelsem" readonly></td>
     <td><input type="text" class="grade"></td>
     <td><input type="number" class="credits" readonly></td>
-    <td>
-      <select class="status" onchange="updateRowColor(this)">
-        <option value="pass" selected>Pass</option>
-        <option value="skip">Skip</option>
-        <option value="redo">Redo</option>
-      </select>
-    </td>
+    <td><button onclick="deleteRow(this)" style="color: red; border: none; background: none; cursor: pointer;">Delete</button></td>
   `;
   document.getElementById('courseTable').appendChild(tr);
   renderSortedTable();
@@ -344,13 +342,7 @@ function uploadCSV() {
         <td><input type="text" class="grade" value="${(grade || '').trim()}"></td>
         <td><input type="text" class="grade2" value="${(grade2 || '').trim()}"></td>
         <td><input type="number" class="credits" readonly></td>
-        <td>
-          <select class="status" onchange="updateRowColor(this)">
-            <option value="pass" selected>Pass</option>
-            <option value="skip">Skip</option>
-            <option value="redo">Redo</option>
-          </select>
-        </td>
+        <td><button onclick="deleteRow(this)" style="color: red; border: none; background: none; cursor: pointer;">Delete</button></td>
       `;
 
       tableBody.appendChild(tr);
@@ -371,7 +363,10 @@ function clearTable() {
     document.getElementById('result').innerText = '';
   }
 }
-
+function deleteRow(button) {
+  button.closest('tr').remove();
+  calculateGPA(); // optional: auto update GPA after delete
+}
 </script>
 
 </body>
